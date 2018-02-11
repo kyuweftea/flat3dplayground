@@ -13,4 +13,4 @@ def make_frame(t):
 
 clip = mpy.VideoClip(make_frame, duration=duration)
 # clip.write_gif("circle.gif",fps=15, opt="OptimizePlus", fuzz=10)
-clip.write_videofile('coolTextEffects.avi',fps=24,codec='mpeg4')
+clip.write_videofile('coolTextEffects.mp4',fps=24)
