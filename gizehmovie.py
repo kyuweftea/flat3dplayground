@@ -20,33 +20,13 @@ def make_mask(t):
     surface = make_surface(t)
     return surface.get_npimage(transparent=True)[:,:,3]/255.0
 
-# np.set_printoptions(threshold=np.nan)
-# print make_mask(0)
-# quit()
-
-imagemask = mpy.ImageClip("pentmask.png", ismask=True)
-
 mask = mpy.VideoClip(make_mask, duration=duration, ismask=True)
 clip = mpy.VideoClip(make_frame, duration=duration)
 
-# np.set_printoptions(threshold=np.nan)
-# print imagemask.get_frame(0)
-# quit()
-
-# np.set_printoptions(threshold=np.nan)
-# print mask.get_frame(0)
-# quit()
-
-
-print type(mask)
-print mask.ismask
-
 clip = clip.set_mask(mask)
 
-
-print type(clip.mask)
-# quit()
-
-# clip.write_gif("circle.gif",fps=15, opt="OptimizePlus", fuzz=10)
-# clip.write_videofile('coolTextEffects.mov',fps=24,codec='png')
+# the with_mask parameter is not on moviepy's master
+# there's a pull request for it, but no one seems to be giving it attention
+# i'm using a fork of moviepy with the pull request changes made
+# https://github.com/Zulko/moviepy/pull/679
 clip.write_videofile('coolTextEffects.mov',fps=24,codec='png',with_mask=True)
