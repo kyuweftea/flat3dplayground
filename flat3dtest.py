@@ -12,6 +12,7 @@ scale = 4
 # scale = 8
 
 def make_surface(t):
+	# print t
 	scene = f3d.Scene2d(w=W, h=H, scale=scale)
 	scene.addElem(f3d.Polyline2d([(0,0), (500,600), (500, 800)], stroke=(0,0,1), width=5))
 	scene.addElem(f3d.Polygon2d([(50,50), (70,60), (30, 100)], fill=(1,0,0)))

@@ -76,15 +76,26 @@ class Scene2d(object):
 		return surface
 
 def export_vid(make_surface, duration, fps=24):
+	d = {
+		't_prev': -1.0,
+		'im': None
+	}
+
 	scale = make_surface(0).scale
 
 	def make_frame(t):
-		surface = make_surface(t)
-		return surface.get_npimage()
+		if (t != d['t_prev']):
+			surface = make_surface(t)
+			d['im'] = surface.get_npimage(transparent=True)
+			d['t_prev'] = t
+		return d['im'][:,:,:3]
 
 	def make_mask(t):
-		surface = make_surface(t)
-		return surface.get_npimage(transparent=True)[:,:,3]/255.0
+		if (t != d['t_prev']):
+			surface = make_surface(t)
+			d['im'] = surface.get_npimage(transparent=True)
+			d['t_prev'] = t
+		return d['im'][:,:,3]/255.0
 
 	mask = mpy.VideoClip(make_mask, duration=duration, ismask=True).resize(1.0/scale)
 	clip = mpy.VideoClip(make_frame, duration=duration).set_mask(mask).resize(1.0/scale)
