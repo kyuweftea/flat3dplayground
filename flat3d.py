@@ -56,6 +56,8 @@ class Scene2d(object):
 		self.elements = []
 		self.scale = scale
 	def addElem(self, elem):
+		if (not (elem.isPolygon() or elem.isPolyline() or elem.isDot())):
+			raise TypeError("cannot add element to scene")
 		self.elements.append(elem)
 	def get_gizeh_surface(self):
 		surface = SurfaceAliased(scale=self.scale, width=int(self.w), height=int(self.h))

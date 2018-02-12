@@ -56,7 +56,7 @@ def draw(ease):
 x_s = map(lambda x: x/20.0, range(21))
 
 # fancy
-draw(fancyBezierEase)
+# draw(fancyBezierEase)
 
 # in-out
 # draw(smoothBezierEase)
