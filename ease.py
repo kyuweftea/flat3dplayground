@@ -48,12 +48,10 @@ def quadOutEase(t):
 
 def draw(ease):
 	print '-'*80
-	for x in x_s:
+	for x in map(lambda x: x/20.0, range(21)):
 		# print "{:10.3f}".format(x), ease(x)
 		print 'o'*int(80*ease(x))
 	print '-'*80
-
-x_s = map(lambda x: x/20.0, range(21))
 
 # fancy
 # draw(fancyBezierEase)
