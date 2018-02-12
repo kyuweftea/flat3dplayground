@@ -75,7 +75,7 @@ class Scene2d(object):
 				raise TypeError("cannot make gizeh element")
 		return surface
 
-def export_vid(make_surface, duration, fps=24):
+def export_vid(name, make_surface, duration, fps=24):
 	d = {
 		't_prev': -1.0,
 		'im': None
@@ -83,20 +83,20 @@ def export_vid(make_surface, duration, fps=24):
 
 	scale = make_surface(0).scale
 
-	def make_frame(t):
+	def update(t):
 		if (t != d['t_prev']):
 			surface = make_surface(t)
 			d['im'] = surface.get_npimage(transparent=True)
 			d['t_prev'] = t
+
+	def make_frame(t):
+		update(t)
 		return d['im'][:,:,:3]
 
 	def make_mask(t):
-		if (t != d['t_prev']):
-			surface = make_surface(t)
-			d['im'] = surface.get_npimage(transparent=True)
-			d['t_prev'] = t
+		update(t)
 		return d['im'][:,:,3]/255.0
 
 	mask = mpy.VideoClip(make_mask, duration=duration, ismask=True).resize(1.0/scale)
 	clip = mpy.VideoClip(make_frame, duration=duration).set_mask(mask).resize(1.0/scale)
-	clip.write_videofile('coolMyEffects.mov',fps=fps,codec='png',with_mask=True)
+	clip.write_videofile("%s.mov" % name, fps=fps, codec='png', with_mask=True)

@@ -20,4 +20,4 @@ def make_surface(t):
 	scene.addElem(f3d.Dot2d((500, 600), stroke=(0, 1, 1), width=5))
 	return scene.get_gizeh_surface()
 
-f3d.export_vid(make_surface, duration)
+f3d.export_vid('coolMyEffects', make_surface, duration)
