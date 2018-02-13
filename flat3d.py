@@ -45,7 +45,7 @@ class SurfaceAliased(gz.Surface, object):
 		super(SurfaceAliased, self).__init__(width=width, height=height)
 		self.scale = scale;
 	def get_new_context(self):
-		cxt = gz.Surface.get_new_context(self)
+		cxt = super(SurfaceAliased, self).get_new_context()
 		cxt.set_antialias(cr.ANTIALIAS_NONE)
 		return cxt
 
@@ -78,26 +78,24 @@ class Scene2d(object):
 		return surface
 
 def export_vid(name, make_surface, duration, fps=24):
-	d = {
-		't_prev': -1.0,
-		'im': None
-	}
+	t_prev = [-1.0]
+	im = [None]
 
 	scale = make_surface(0).scale
 
 	def update(t):
-		if (t != d['t_prev']):
+		if (t != t_prev[0]):
 			surface = make_surface(t)
-			d['im'] = surface.get_npimage(transparent=True)
-			d['t_prev'] = t
+			im[0] = surface.get_npimage(transparent=True)
+			t_prev[0] = t
 
 	def make_frame(t):
 		update(t)
-		return d['im'][:,:,:3]
+		return im[0][:,:,:3]
 
 	def make_mask(t):
 		update(t)
-		return d['im'][:,:,3]/255.0
+		return im[0][:,:,3]/255.0
 
 	mask = mpy.VideoClip(make_mask, duration=duration, ismask=True).resize(1.0/scale)
 	clip = mpy.VideoClip(make_frame, duration=duration).set_mask(mask).resize(1.0/scale)
