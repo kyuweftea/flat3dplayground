@@ -13,6 +13,8 @@ class Element2d(object):
 		return False
 	def isDot(self):
 		return False
+	def isText(self):
+		return False
 
 class Polygon2d(Element2d):
 	def __init__(self, points, fill=None):
@@ -42,6 +44,21 @@ class Dot2d(Element2d):
 	def isDot(self):
 		return True
 
+class Text2d(Element2d):
+	def __init__(self, position, fill, txt, fontfamily, fontsize, bold=False, v_align="center", h_align="center"):
+		super(Text2d, self).__init__()
+		self.position = position
+		self.fill = fill
+		self.txt = txt
+		self.fontfamily = fontfamily
+		self.fontsize = fontsize
+		self.fill = fill
+		self.bold = bold
+		self.v_align = v_align
+		self.h_align = h_align
+	def isText(self):
+		return True
+
 class SurfaceAliased(gz.Surface, object):
 	def __init__(self, scale, width, height):
 		super(SurfaceAliased, self).__init__(width=width, height=height)
@@ -59,7 +76,7 @@ class Scene2d(object):
 		self.scale = scale
 		self.transform = transform
 	def addElem(self, elem):
-		if (not (elem.isPolygon() or elem.isPolyline() or elem.isDot())):
+		if (not (elem.isPolygon() or elem.isPolyline() or elem.isDot() or elem.isText())):
 			raise TypeError("cannot add element to scene")
 		self.elements.append(elem)
 	def get_gizeh_surface(self):
@@ -78,6 +95,10 @@ class Scene2d(object):
 				x = elem.point
 				dot = gz.circle(r=self.scale*elem.width/2.0, xy=xf.m(tf,x), fill=elem.stroke)
 				dot.draw(surface)
+			elif (elem.isText()):
+				x = elem.position
+				text = gz.text(xy=xf.m(tf,x), fill=elem.fill, txt=elem.txt, fontfamily=elem.fontfamily, fontsize=self.scale*elem.fontsize, fontweight=("bold" if elem.bold else "normal"), v_align=elem.v_align, h_align=elem.h_align)
+				text.draw(surface)
 			else:
 				raise TypeError("cannot make gizeh element")
 		return surface
