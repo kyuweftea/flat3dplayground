@@ -8,8 +8,8 @@ import ease
 W,H = 1920,1080 # width, height, in pixels
 duration = 1 # duration of the clip, in seconds
 
-scale = 1.0/4
-# scale = 4
+# scale = 1.0/4
+scale = 4
 # scale = 1
 # scale = 8
 

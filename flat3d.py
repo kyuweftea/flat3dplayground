@@ -106,6 +106,11 @@ def XFrotateZ3d(a):
 	        [         0,          0,          0, 0],
 	        [         0,          0,          0, 1]]
 
+def XF(xf, p, suffix=1):
+	_p = list(p)
+	_p.append(suffix)
+	return np.matmul(xf, _p)[:len(p)]
+
 class Scene2d(object):
 	def __init__(self, w, h, scale=1, transform=np.identity(3)):
 		self.w = scale*w
@@ -122,16 +127,16 @@ class Scene2d(object):
 		tf = np.matmul(XFscale2d(self.scale), self.transform)
 		for elem in self.elements:
 			if (elem.isPolygon()):
-				points = list(map(lambda x: np.matmul(tf, [x[0], x[1], 1])[:2], elem.points))
+				points = list(map(lambda x: XF(tf,x), elem.points))
 				polygon = gz.polyline(points, fill=elem.fill, close_path=True)
 				polygon.draw(surface)
 			elif (elem.isPolyline()):
-				points = list(map(lambda x: np.matmul(tf, [x[0], x[1], 1])[:2], elem.points))
+				points = list(map(lambda x: XF(tf,x), elem.points))
 				polyline = gz.polyline(points, stroke=elem.stroke, stroke_width=self.scale*elem.width, close_path=elem.closed, line_cap=('butt' if elem.capbutt else 'round'))
 				polyline.draw(surface)
 			elif (elem.isDot()):
 				x = elem.point
-				dot = gz.circle(r=self.scale*elem.width/2.0, xy=np.matmul(tf, [x[0], x[1], 1])[:2], fill=elem.stroke)
+				dot = gz.circle(r=self.scale*elem.width/2.0, xy=XF(tf,x), fill=elem.stroke)
 				dot.draw(surface)
 			else:
 				raise TypeError("cannot make gizeh element")
