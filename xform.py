@@ -62,7 +62,4 @@ def m(xf, p, suffix=1):
 	return np.matmul(xf, _p)[:len(p)]
 
 def M(*xf_s):
-	result = np.identity(len(xf_s[0]))
-	for xf in xf_s:
-		result = np.matmul(result, xf)
-	return result
+	return reduce(lambda x, y: np.matmul(x, y), xf_s)

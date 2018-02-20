@@ -21,6 +21,8 @@ class Polygon2d(Element2d):
 		super(Polygon2d, self).__init__()
 		self.points = points
 		self.fill = fill
+	def tf(self, tf):
+		self.points = list(map(lambda x: xf.m(tf,x), self.points))
 	def isPolygon(self):
 		return True
 
@@ -32,6 +34,8 @@ class Polyline2d(Element2d):
 		self.width = width
 		self.closed = closed
 		self.capbutt = capbutt
+	def tf(self, tf):
+		self.points = list(map(lambda x: xf.m(tf,x), self.points))
 	def isPolyline(self):
 		return True
 
@@ -41,6 +45,8 @@ class Dot2d(Element2d):
 		self.point = point
 		self.stroke = stroke
 		self.width = width
+	def tf(self, tf):
+		self.point = xf.m(tf, self.point)
 	def isDot(self):
 		return True
 
@@ -56,6 +62,8 @@ class Text2d(Element2d):
 		self.bold = bold
 		self.v_align = v_align
 		self.h_align = h_align
+	def tf(self, tf):
+		self.position = xf.m(tf, self.position)
 	def isText(self):
 		return True
 
@@ -83,24 +91,19 @@ class Scene2d(object):
 		surface = SurfaceAliased(scale=self.scale, width=int(self.w), height=int(self.h))
 		tf = np.matmul(xf.scale2d(self.scale), self.transform)
 		for elem in self.elements:
+			elem.tf(tf)
+			gzelem = None
 			if (elem.isPolygon()):
-				points = list(map(lambda x: xf.m(tf,x), elem.points))
-				polygon = gz.polyline(points, fill=elem.fill, close_path=True)
-				polygon.draw(surface)
+				gzelem = gz.polyline(elem.points, fill=elem.fill, close_path=True)
 			elif (elem.isPolyline()):
-				points = list(map(lambda x: xf.m(tf,x), elem.points))
-				polyline = gz.polyline(points, stroke=elem.stroke, stroke_width=self.scale*elem.width, close_path=elem.closed, line_cap=('butt' if elem.capbutt else 'round'))
-				polyline.draw(surface)
+				gzelem = gz.polyline(elem.points, stroke=elem.stroke, stroke_width=self.scale*elem.width, close_path=elem.closed, line_cap=('butt' if elem.capbutt else 'round'))
 			elif (elem.isDot()):
-				x = elem.point
-				dot = gz.circle(r=self.scale*elem.width/2.0, xy=xf.m(tf,x), fill=elem.stroke)
-				dot.draw(surface)
+				gzelem = gz.circle(r=self.scale*elem.width/2.0, xy=elem.point, fill=elem.stroke)
 			elif (elem.isText()):
-				x = elem.position
-				text = gz.text(xy=xf.m(tf,x), fill=elem.fill, txt=elem.txt, fontfamily=elem.fontfamily, fontsize=self.scale*elem.fontsize, fontweight=("bold" if elem.bold else "normal"), v_align=elem.v_align, h_align=elem.h_align)
-				text.draw(surface)
+				gzelem = gz.text(xy=elem.position, fill=elem.fill, txt=elem.txt, fontfamily=elem.fontfamily, fontsize=self.scale*elem.fontsize, fontweight=("bold" if elem.bold else "normal"), v_align=elem.v_align, h_align=elem.h_align)
 			else:
 				raise TypeError("cannot make gizeh element")
+			gzelem.draw(surface)
 		return surface
 
 def export_vid(name, make_surface, duration, fps=24):
