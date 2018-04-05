@@ -22,7 +22,7 @@ def make_surface(t):
 	scene = f3d.Scene2d(w=W, h=H, scale=scale, transform=xf.M(xf.translate2d(0, H), xf.scale2d(1, -1), xf.rotate2d(xf.rad(30*t))))
 	scene.addElem(f3d.Polyline2d([(0,0), (500,600), (500, 800)], stroke=(0,0,1), width=5))
 	scene.addElem(f3d.Polygon2d([(50+50*myease(t),50+50*myease(t)), (70+50*myease(t),60+50*myease(t)), (30+50*myease(t), 100+50*myease(t))], fill=(1,0,0)))
-	scene.addElem(f3d.Polygon2d([(100+200*myease(t),100+200*myease(t)), (70+200*myease(t),60+200*myease(t)), (30+200*myease(t), 100+200*myease(t))], fill=(1,0,0)))
+	scene.addElem(f3d.Polygon2d([(100+200*myease(t),100+200*myease(t)), (70+200*myease(t),60+200*myease(t)), (30+200*myease(t), 100+200*myease(t))], fill=(1,0,0)).tf(xf.translate2d(0,0)))
 	scene.addElem(f3d.Dot2d((500-10*myease(t), 600-10*myease(t)), stroke=(0, 1, 1), width=5))
 	scene.addElem(f3d.Text2d(position=(W/2,H/2), fill=colour['Green']['300'], txt="hello world! %s" % (greek['theta']), fontfamily="Neo Euler", fontsize=40))
 	return scene.get_gizeh_surface()

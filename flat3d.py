@@ -23,6 +23,7 @@ class Polygon2d(Element2d):
 		self.fill = fill
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
+		return self
 	def isPolygon(self):
 		return True
 
@@ -36,6 +37,7 @@ class Polyline2d(Element2d):
 		self.capbutt = capbutt
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
+		return self
 	def isPolyline(self):
 		return True
 
@@ -47,6 +49,7 @@ class Dot2d(Element2d):
 		self.width = width
 	def tf(self, tf):
 		self.point = xf.m(tf, self.point)
+		return self
 	def isDot(self):
 		return True
 
@@ -64,6 +67,7 @@ class Text2d(Element2d):
 		self.h_align = h_align
 	def tf(self, tf):
 		self.position = xf.m(tf, self.position)
+		return self
 	def isText(self):
 		return True
 
