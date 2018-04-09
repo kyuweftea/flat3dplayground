@@ -110,9 +110,12 @@ class Scene2d(object):
 			gzelem.draw(surface)
 		return surface
 
-def export_vid(name, make_surface, duration, fps=24):
+def export_vid(name, make_scene, duration, fps=24):
 	t_prev = [-1.0]
 	im = [None]
+
+	def make_surface(t):
+		return make_scene(t).get_gizeh_surface()
 
 	scale = make_surface(0).scale
 
@@ -134,7 +137,8 @@ def export_vid(name, make_surface, duration, fps=24):
 	clip = mpy.VideoClip(make_frame, duration=duration).set_mask(mask).resize(1.0/scale)
 	clip.write_videofile("%s.mov" % name, fps=fps, codec='png', with_mask=True)
 
-def export_img(name, surface):
+def export_img(name, scene):
+	surface = scene.get_gizeh_surface()
 	filename = "%s.png" % name
 	surface.write_to_png(filename)
 	print "[flat3D]", "Image ready:", filename
