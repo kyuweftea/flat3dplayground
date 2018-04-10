@@ -4,8 +4,50 @@ import cairocffi as cr
 import moviepy.editor as mpy
 import xform as xf
 
+class Clipper(object):
+	def __init__(self):
+		pass
+	def contains(self, point):
+		return True
+	def intersect(self, pa, pb):
+		return None
+	def intersect(self, pa, pb):
+		return None
+	def isLineClipper(self):
+		return False
+
+class LineClipper(Clipper):
+	def __init__(self, linepnt, linedir):
+		super(Clipper, self).__init__()
+		self.linepnt = linepnt
+		self.linedir = linedir
+	def contains(self, point):
+		topoint = (point[0] - self.linepnt[0], point[1] - self.linepnt[1])
+		return 0 >= self.linedir[0]*topoint[1] - topoint[0]*self.linedir[1]
+	def intersect(self, pa, pb):
+		tob = (pb[0] - pa[0], pb[1] - pa[1])
+		t = (self.linedir[0]*(pa[1] - self.linepnt[1]) - self.linedir[1]*(pa[0] - self.linepnt[0])) / (self.linedir[1]*tob[0] - self.linedir[0]*tob[1])
+		return (pa[0] + t*tob[0], pa[1] + t*tob[1])
+	def isLineClipper(self):
+		return True
+
+class InverseClipper(Clipper):
+	def __init__(self, inv):
+		super(Clipper, self).__init__()
+		self.inv = inv
+	def contains(self, point):
+		return not self.inv.contains(point)
+	def intersect(self, pa, pb):
+		return self.inv.intersect(pa, pb)
+	def isLineClipper(self):
+		return self.inv.isLineClipper()
+
 class Element2d(object):
 	def __init__(self):
+		pass
+	def tf(self, tf):
+		pass
+	def clip(self, clipper):
 		pass
 	def isPolygon(self):
 		return False
@@ -24,6 +66,21 @@ class Polygon2d(Element2d):
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
 		return self
+	def clip(self, clipper):
+		if (clipper.isLineClipper()):
+			if (len(self.points) > 0):
+				newpoints = []
+				S = self.points[-1]
+				for E in self.points:
+					if (clipper.contains(E)):
+						if (not clipper.contains(S)):
+							newpoints.append(clipper.intersect(S, E))
+						newpoints.append(E)
+					elif (clipper.contains(S)):
+						newpoints.append(clipper.intersect(S, E))
+					S = E
+				self.points = newpoints
+		return self
 	def isPolygon(self):
 		return True
 
@@ -38,6 +95,22 @@ class Polyline2d(Element2d):
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
 		return self
+	def clip(self, clipper):
+		if (clipper.isLineClipper()):
+			# note: only works with single lines
+			if (len(self.points) > 0):
+				newpoints = []
+				S = self.points[-1]
+				for E in self.points:
+					if (clipper.contains(E)):
+						if (not clipper.contains(S)):
+							newpoints.append(clipper.intersect(S, E))
+						newpoints.append(E)
+					elif (clipper.contains(S)):
+						newpoints.append(clipper.intersect(S, E))
+					S = E
+				self.points = newpoints
+		return self
 	def isPolyline(self):
 		return True
 
@@ -47,8 +120,13 @@ class Dot2d(Element2d):
 		self.point = point
 		self.stroke = stroke
 		self.width = width
+		self.clipped = False
 	def tf(self, tf):
 		self.point = xf.m(tf, self.point)
+		return self
+	def clip(self, clipper):
+		if (not clipper.contains(self.point)):
+			self.clipped = True
 		return self
 	def isDot(self):
 		return True
@@ -98,16 +176,20 @@ class Scene2d(object):
 			elem.tf(tf)
 			gzelem = None
 			if (elem.isPolygon()):
-				gzelem = gz.polyline(elem.points, fill=elem.fill, close_path=True)
+				if (len(elem.points) > 0):
+					gzelem = gz.polyline(elem.points, fill=elem.fill, close_path=True)
 			elif (elem.isPolyline()):
-				gzelem = gz.polyline(elem.points, stroke=elem.stroke, stroke_width=self.scale*elem.width, close_path=elem.closed, line_cap=('butt' if elem.capbutt else 'round'))
+				if (len(elem.points) > 0):
+					gzelem = gz.polyline(elem.points, stroke=elem.stroke, stroke_width=self.scale*elem.width, close_path=elem.closed, line_cap=('butt' if elem.capbutt else 'round'))
 			elif (elem.isDot()):
-				gzelem = gz.circle(r=self.scale*elem.width/2.0, xy=elem.point, fill=elem.stroke)
+				if (not elem.clipped):
+					gzelem = gz.circle(r=self.scale*elem.width/2.0, xy=elem.point, fill=elem.stroke)
 			elif (elem.isText()):
 				gzelem = gz.text(xy=elem.position, fill=elem.fill, txt=elem.txt, fontfamily=elem.fontfamily, fontsize=self.scale*elem.fontsize, fontweight=("bold" if elem.bold else "normal"), v_align=elem.v_align, h_align=elem.h_align)
 			else:
 				raise TypeError("cannot make gizeh element")
-			gzelem.draw(surface)
+			if (not (gzelem is None)):
+				gzelem.draw(surface)
 		return surface
 
 def export_vid(name, make_scene, duration, fps=24):
