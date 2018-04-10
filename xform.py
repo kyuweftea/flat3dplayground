@@ -53,7 +53,7 @@ def rotateY3d(a):
 def rotateZ3d(a):
 	return [[ np.cos(a), -np.sin(a),          0, 0],
 	        [ np.sin(a),  np.cos(a),          0, 0],
-	        [         0,          0,          0, 0],
+	        [         0,          0,          1, 0],
 	        [         0,          0,          0, 1]]
 
 def m(xf, p, suffix=1):
@@ -63,3 +63,21 @@ def m(xf, p, suffix=1):
 
 def M(*xf_s):
 	return reduce(lambda x, y: np.matmul(x, y), xf_s)
+
+def dot3d(va, vb):
+	return va[0]*vb[0] + va[1]*vb[1] + va[2]*vb[2]
+
+def cross(va, vb):
+	return (va[1]*vb[2] - va[2]*vb[1], va[2]*vb[0] - va[0]*vb[2], va[0]*vb[1] - va[1]*vb[0])
+
+def length3d(v):
+	return np.sqrt(dot3d(v, v))
+
+class Plane(object):
+	def __init__(self, pt, nm):
+		self.pt = pt
+		self.nm = xf.norm3d(nm)
+
+def norm3d(v):
+	l = length3d(v)
+	return (v[0]/l, v[1]/l, v[2]/l)
