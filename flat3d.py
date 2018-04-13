@@ -240,12 +240,13 @@ class Triangle3d(Element3d):
 		return True
 
 class Line3d(Element3d):
-	def __init__(self, points, fill=None):
+	def __init__(self, points, stroke=None, width=None):
 		super(Line3d, self).__init__()
 		if (len(points) != 2):
 			raise ValueError("3D Lines need 2 points, but %d were given" % len(points))
 		self.points = points
-		self.fill = fill
+		self.stroke = stroke
+		self.width = width
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
 		return self
@@ -253,10 +254,11 @@ class Line3d(Element3d):
 		return True
 
 class Dot3d(Element3d):
-	def __init__(self, point, fill=None):
+	def __init__(self, point, stroke=None, width=None):
 		super(Dot3d, self).__init__()
 		self.point = point
-		self.fill = fill
+		self.stroke = stroke
+		self.width = width
 	def tf(self, tf):
 		self.point = xf.m(tf, self.point)
 		return self
@@ -276,6 +278,14 @@ class Tree(object):
 		self.data = data
 		self.left = left
 		self.right = right
+	def printTree(self, depth=0):
+		print "\t"*depth + str(self.data)
+		if (not self.left is None):
+			print "left:"
+			self.left.printTree(depth=depth+1)
+		if (not self.right is None):
+			print "right:"
+			self.right.printTree(depth=depth+1)
 
 class GeoNode(object):
 	def __init__(self, elem, plane):
@@ -290,6 +300,9 @@ class GeoNode(object):
 			return not self.elem.clipped
 		else:
 			raise TypeError("not 2D element")
+	# !!! REMOVE THIS
+	def __str__(self):
+		return str(self.elem.fill)
 
 class Scene3d(Scene):
 	def __init__(self, w2d, h2d, scale2d=1, transform=np.identity(4), camera=None):
@@ -311,19 +324,19 @@ class Scene3d(Scene):
 		if (elem3d.isTriangle()):
 			plane = xf.Plane(elem3d.points[0],
 			                      xf.cross((elem3d.points[1][0] - elem3d.points[0][0], elem3d.points[1][1] - elem3d.points[0][1], elem3d.points[1][2] - elem3d.points[0][2]),
-			                   	           (elem3d.points[2][0] - elem3d.points[2][0], elem3d.points[2][1] - elem3d.points[2][1], elem3d.points[2][2] - elem3d.points[2][2])))
+			                   	           (elem3d.points[2][0] - elem3d.points[0][0], elem3d.points[2][1] - elem3d.points[0][1], elem3d.points[2][2] - elem3d.points[0][2])))
 			elem = Polygon2d([(elem3d.points[0][0], elem3d.points[0][1]), (elem3d.points[1][0], elem3d.points[1][1]), (elem3d.points[2][0], elem3d.points[2][1])],
-				                   fill=(1,0,0))
+				                   fill=elem3d.fill)
 		elif (elem3d.isLine()):
 			linedir = (elem3d.points[1][0] - elem3d.points[0][0], elem3d.points[1][1] - elem3d.points[0][1], elem3d.points[1][2] - elem3d.points[0][2])
 			zaxis = (0, 0, 1)
 			plane = xf.Plane(elem3d.points[0],
 			                      xf.cross(xf.cross(linedir, zaxis), linedir))
 			elem = Polyline2d([(elem3d.points[0][0], elem3d.points[0][1]), (elem3d.points[1][0], elem3d.points[1][1])],
-			                       stroke=(1,1,1), width=2)
+			                       stroke=elem3d.stroke, width=elem3d.width)
 		elif (elem3d.isDot()):
 			plane = xf.Plane(elem3d.point, (0, 0, 1))
-			elem = Dot2d((elem3d.point[0], elem3d.point[1]), stroke=(0,1,0), width=2)
+			elem = Dot2d((elem3d.point[0], elem3d.point[1]), stroke=elem3d.stroke, width=elem3d.width)
 		else:
 			raise TypeError("not 3D element")
 		return GeoNode(elem=elem, plane=plane)
@@ -331,7 +344,7 @@ class Scene3d(Scene):
 		if (xf.dot3d(linedir, planenm) < 1e-10):
 			# parallel
 			return None
-		t = xf.dot3d(plannm, (planept[0] - linepnt[0], planept[1] - linepnt[1], planept[2] - linepnt[2])) / xf.dot3d(plannm, linedir)
+		t = xf.dot3d(planenm, (planept[0] - linepnt[0], planept[1] - linepnt[1], planept[2] - linepnt[2])) / xf.dot3d(planenm, linedir)
 		return (linepnt[0] + t*linedir[0], linepnt[1] + t*linedir[1], linepnt[2] + t*linedir[2])
 	def insertToTree(self, tree, geonode):
 		# if tree is None, make tree with this geonode
@@ -398,12 +411,12 @@ class Scene3d(Scene):
 				# insert left/right into that tree
 	def drawTree(self, scene2d, tree):
 		if (not tree.left is None):
-			drawTree(scene2d, tree.left)
+			self.drawTree(scene2d, tree.left)
 
 		scene2d.addElem(tree.data.elem)
 
 		if (not tree.right is None):
-			drawTree(scene2d, tree.right)
+			self.drawTree(scene2d, tree.right)
 	def get_gizeh_surface(self):
 		tf = self.transform
 		v_x = xf.norm3d(xf.cross(self.camera.direction, self.camera.up))
@@ -423,7 +436,7 @@ class Scene3d(Scene):
 			elem.tf(v)
 			self.insertToTree(tree, self.geonodeFromElem3d(elem))
 
-
+		# tree.printTree()
 		# TODO apply perspective via "smart" z parameter in 2d elements
 
 		# make scene2d via in-order traversal of tree
