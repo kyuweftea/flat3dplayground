@@ -16,9 +16,11 @@ class Clipper(object):
 		return True
 	def intersect(self, pa, pb):
 		return None
-	def intersect(self, pa, pb):
+	def intersect(self, pa, pb, paw=1, pbw=1):
 		return None
 	def isLineClipper(self):
+		return False
+	def isTruthClipper(self):
 		return False
 
 class TrueClipper(Clipper):
@@ -26,8 +28,10 @@ class TrueClipper(Clipper):
 		super(Clipper, self).__init__()
 	def contains(self, point):
 		return True
-	def intersect(self, pa, pb):
+	def intersect(self, pa, pb, paw=1, pbw=1):
 		raise TypeError("intersecting with TrueClipper")
+	def isTruthClipper(self):
+		return True
 
 class LineClipper(Clipper):
 	def __init__(self, linepnt, linedir):
@@ -37,10 +41,11 @@ class LineClipper(Clipper):
 	def contains(self, point):
 		topoint = (point[0] - self.linepnt[0], point[1] - self.linepnt[1])
 		return 0 >= self.linedir[0]*topoint[1] - topoint[0]*self.linedir[1]
-	def intersect(self, pa, pb):
+	def intersect(self, pa, pb, paw=1, pbw=1):
 		tob = (pb[0] - pa[0], pb[1] - pa[1])
+		tobw = pbw - paw
 		t = (self.linedir[0]*(pa[1] - self.linepnt[1]) - self.linedir[1]*(pa[0] - self.linepnt[0])) / (self.linedir[1]*tob[0] - self.linedir[0]*tob[1])
-		return (pa[0] + t*tob[0], pa[1] + t*tob[1])
+		return (pa[0] + t*tob[0], pa[1] + t*tob[1]), paw + t*tobw
 	def isLineClipper(self):
 		return True
 
@@ -50,10 +55,12 @@ class InverseClipper(Clipper):
 		self.inv = inv
 	def contains(self, point):
 		return not self.inv.contains(point)
-	def intersect(self, pa, pb):
+	def intersect(self, pa, pb, paw=1, pbw=1):
 		return self.inv.intersect(pa, pb)
 	def isLineClipper(self):
 		return self.inv.isLineClipper()
+	def isTruthClipper(self):
+		return self.inv.isTruthClipper()
 
 class Element2d(object):
 	def __init__(self):
@@ -74,9 +81,15 @@ class Element2d(object):
 		return False
 
 class Polygon2d(Element2d):
-	def __init__(self, points, fill=None):
+	def __init__(self, points, w_s=None, fill=None):
 		super(Polygon2d, self).__init__()
 		self.points = points
+		if (w_s is None):
+			self.w_s = np.ones(len(points))
+		elif (len(w_s) == len(points)):
+			self.w_s = w_s
+		else:
+			raise TypeError("different number of points and w_s")
 		self.fill = fill
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
@@ -85,16 +98,33 @@ class Polygon2d(Element2d):
 		if (clipper.isLineClipper()):
 			if (len(self.points) > 0):
 				newpoints = []
+				newWs = []
 				S = self.points[-1]
-				for E in self.points:
+				Sw = self.w_s[-1]
+				for i in range(len(self.points)):
+					E = self.points[i]
+					Ew = self.w_s[i]
 					if (clipper.contains(E)):
 						if (not clipper.contains(S)):
-							newpoints.append(clipper.intersect(S, E))
+							pt, w = clipper.intersect(S, E, Sw, Ew)
+							newpoints.append(pt)
+							newWs.append(w)
 						newpoints.append(E)
+						newWs.append(Ew)
 					elif (clipper.contains(S)):
-						newpoints.append(clipper.intersect(S, E))
+						pt, w = clipper.intersect(S, E, Sw, Ew)
+						newpoints.append(pt)
+						newWs.append(w)
 					S = E
+					Sw = Ew
 				self.points = newpoints
+				self.w_s = newWs
+		elif (clipper.isTruthClipper()):
+			if (not clipper.contains((0,0))):
+				self.points = []
+				self.w_s = []
+		else:
+			raise TypeError("unrecognized clipper")
 		return self
 	def isClipped(self):
 		return len(self.points) == 0
@@ -102,9 +132,15 @@ class Polygon2d(Element2d):
 		return True
 
 class Polyline2d(Element2d):
-	def __init__(self, points, stroke=None, width=None, closed=False, capbutt=False):
+	def __init__(self, points, w_s=None, stroke=None, width=None, closed=False, capbutt=False):
 		super(Polyline2d, self).__init__()
 		self.points = points
+		if (w_s is None):
+			self.w_s = np.ones(len(points))
+		elif (len(w_s) == len(points)):
+			self.w_s = w_s
+		else:
+			raise TypeError("different number of points and w_s")
 		self.stroke = stroke
 		self.width = width
 		self.closed = closed
@@ -117,16 +153,32 @@ class Polyline2d(Element2d):
 			# note: only works with single lines
 			if (len(self.points) > 0):
 				newpoints = []
+				newWs = []
 				S = self.points[-1]
-				for E in self.points:
+				Sw = self.w_s[-1]
+				for i in range(len(self.points)):
+					E = self.points[i]
+					Ew = self.w_s[i]
 					if (clipper.contains(E)):
 						if (not clipper.contains(S)):
-							newpoints.append(clipper.intersect(S, E))
+							pt, w = clipper.intersect(S, E, Sw, Ew)
+							newpoints.append(pt)
+							newWs.append(w)
 						newpoints.append(E)
 					elif (clipper.contains(S)):
-						newpoints.append(clipper.intersect(S, E))
+						pt, w = clipper.intersect(S, E, Sw, Ew)
+						newpoints.append(pt)
+						newWs.append(w)
 					S = E
+					Sw = Ew
 				self.points = newpoints
+				self.w_s = newWs
+		elif (clipper.isTruthClipper()):
+			if (not clipper.contains((0,0))):
+				self.points = []
+				self.w_s = []
+		else:
+			raise TypeError("unrecognized clipper")
 		return self
 	def isClipped(self):
 		return len(self.points) == 0
@@ -134,9 +186,10 @@ class Polyline2d(Element2d):
 		return True
 
 class Dot2d(Element2d):
-	def __init__(self, point, stroke=None, width=None):
+	def __init__(self, point, w=1, stroke=None, width=None):
 		super(Dot2d, self).__init__()
 		self.point = point
+		self.w = w
 		self.stroke = stroke
 		self.width = width
 		self.clipped = False
@@ -266,12 +319,13 @@ class Dot3d(Element3d):
 		return True
 
 class Camera3d(object):
-	def __init__(self, position, direction, up, fov, aspect):
+	def __init__(self, position, direction, up, fov, aspect, near):
 		self.position = position
 		self.direction = direction
 		self.up = up
 		self.fov = fov
 		self.aspect = aspect
+		self.near = near
 
 class Tree(object):
 	def __init__(self, data=None, left=None, right=None):
@@ -326,6 +380,7 @@ class Scene3d(Scene):
 			                      xf.cross((elem3d.points[1][0] - elem3d.points[0][0], elem3d.points[1][1] - elem3d.points[0][1], elem3d.points[1][2] - elem3d.points[0][2]),
 			                   	           (elem3d.points[2][0] - elem3d.points[0][0], elem3d.points[2][1] - elem3d.points[0][1], elem3d.points[2][2] - elem3d.points[0][2])))
 			elem = Polygon2d([(elem3d.points[0][0], elem3d.points[0][1]), (elem3d.points[1][0], elem3d.points[1][1]), (elem3d.points[2][0], elem3d.points[2][1])],
+				                   w_s=[elem3d.points[0][2], elem3d.points[1][2], elem3d.points[2][2]],
 				                   fill=elem3d.fill)
 		elif (elem3d.isLine()):
 			linedir = (elem3d.points[1][0] - elem3d.points[0][0], elem3d.points[1][1] - elem3d.points[0][1], elem3d.points[1][2] - elem3d.points[0][2])
@@ -333,12 +388,30 @@ class Scene3d(Scene):
 			plane = xf.Plane(elem3d.points[0],
 			                      xf.cross(xf.cross(linedir, zaxis), linedir))
 			elem = Polyline2d([(elem3d.points[0][0], elem3d.points[0][1]), (elem3d.points[1][0], elem3d.points[1][1])],
+				                   w_s=[elem3d.points[0][2], elem3d.points[1][2]],
 			                       stroke=elem3d.stroke, width=elem3d.width)
 		elif (elem3d.isDot()):
 			plane = xf.Plane(elem3d.point, (0, 0, 1))
-			elem = Dot2d((elem3d.point[0], elem3d.point[1]), stroke=elem3d.stroke, width=elem3d.width)
+			elem = Dot2d((elem3d.point[0], elem3d.point[1]), w=elem3d.point[2], stroke=elem3d.stroke, width=elem3d.width)
 		else:
 			raise TypeError("not 3D element")
+
+		#TODO intersect with near plane
+		
+		# nppt = (0, 0, -self.camera.near)
+		# npnm = (0, 0, 1)
+		# lineClipperDirection = xf.cross(npnm, plane.nm)
+		# if (xf.length3d(lineClipperDirection) < 1e-10):
+		# 	# elem is directy facing camera
+		# 	if (plane.pt[2] > -self.camera.near):
+		# 		# elem is entirely in from of near plane
+		# 		elem.clip(InverseClipper(TrueClipper()))
+		# else:
+
+
+		if (elem.isClipped()):
+			return None
+
 		return GeoNode(elem=elem, plane=plane)
 	def intersectLinePlane(self, linepnt, linedir, planept, planenm):
 		if (xf.dot3d(linedir, planenm) < 1e-10):
@@ -347,6 +420,9 @@ class Scene3d(Scene):
 		t = xf.dot3d(planenm, (planept[0] - linepnt[0], planept[1] - linepnt[1], planept[2] - linepnt[2])) / xf.dot3d(planenm, linedir)
 		return (linepnt[0] + t*linedir[0], linepnt[1] + t*linedir[1], linepnt[2] + t*linedir[2])
 	def insertToTree(self, tree, geonode):
+		if (geonode is None):
+			return
+
 		# if tree is None, make tree with this geonode
 		if (tree.data is None):
 			tree.data = geonode
@@ -358,7 +434,7 @@ class Scene3d(Scene):
 			lineClipperDirection = xf.cross(tree.data.plane.nm, geonode.plane.nm)
 			if (xf.length3d(lineClipperDirection) < 1e-10):
 				# planes are parallel
-				if (geonode.plan.nm[2]**2 < 1e-10):
+				if (geonode.plane.nm[2]**2 < 1e-10):
 					# shapes are flat
 					return
 				else:
@@ -437,7 +513,7 @@ class Scene3d(Scene):
 			self.insertToTree(tree, self.geonodeFromElem3d(elem))
 
 		# tree.printTree()
-		# TODO apply perspective via "smart" z parameter in 2d elements
+		# TODO apply perspective via w parameter in 2d elements
 
 		# make scene2d via in-order traversal of tree
 		self.drawTree(scene2d, tree)
