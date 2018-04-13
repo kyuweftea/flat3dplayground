@@ -73,11 +73,11 @@ def cross(va, vb):
 def length3d(v):
 	return np.sqrt(dot3d(v, v))
 
+def norm3d(v):
+	l = length3d(v)
+	return (v[0]/l, v[1]/l, v[2]/l)
+
 class Plane(object):
 	def __init__(self, pt, nm):
 		self.pt = pt
 		self.nm = xf.norm3d(nm)
-
-def norm3d(v):
-	l = length3d(v)
-	return (v[0]/l, v[1]/l, v[2]/l)
