@@ -394,14 +394,14 @@ class Scene3d(Scene):
 				if (tree.left is None):
 					tree.left = Tree(data=backGeoNode)
 				else:
-					insertToTree(tree.left, backGeoNode)
+					self.insertToTree(tree.left, backGeoNode)
 
 			frontGeoNode = GeoNode(elem=copy.deepcopy(geonode.elem).clip(frontClipper), plane=geonode.plane)
 			if (not frontGeoNode.elem.isClipped()):
 				if (tree.right is None):
 					tree.right = Tree(data=frontGeoNode)
 				else:
-					insertToTree(tree.right, frontGeoNode)
+					self.insertToTree(tree.right, frontGeoNode)
 
 		# TODO
 		# for in front and behind, if contains geometry
