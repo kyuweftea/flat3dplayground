@@ -80,4 +80,4 @@ def norm3d(v):
 class Plane(object):
 	def __init__(self, pt, nm):
 		self.pt = pt
-		self.nm = xf.norm3d(nm)
+		self.nm = norm3d(nm)
