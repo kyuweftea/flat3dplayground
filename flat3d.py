@@ -56,7 +56,7 @@ class InverseClipper(Clipper):
 	def contains(self, point):
 		return not self.inv.contains(point)
 	def intersect(self, pa, pb, paw=1, pbw=1):
-		return self.inv.intersect(pa, pb)
+		return self.inv.intersect(pa, pb, paw, pbw)
 	def isLineClipper(self):
 		return self.inv.isLineClipper()
 	def isTruthClipper(self):
@@ -71,6 +71,8 @@ class Element2d(object):
 		pass
 	def isClipped(self):
 		return False
+	def perspectivize(self, fov, aspect):
+		pass
 	def isPolygon(self):
 		return False
 	def isPolyline(self):
@@ -128,6 +130,9 @@ class Polygon2d(Element2d):
 		return self
 	def isClipped(self):
 		return len(self.points) == 0
+	def perspectivize(self, fov, aspect):
+		for i in range(len(self.points)):
+			self.points[i] = xf.m(xf.scale2d(1.0/(self.w_s[i] * np.tan(fov/2.0) * aspect), 1.0/(self.w_s[i] * np.tan(fov/2.0))), self.points[i])
 	def isPolygon(self):
 		return True
 
@@ -165,6 +170,7 @@ class Polyline2d(Element2d):
 							newpoints.append(pt)
 							newWs.append(w)
 						newpoints.append(E)
+						newWs.append(Ew)
 					elif (clipper.contains(S)):
 						pt, w = clipper.intersect(S, E, Sw, Ew)
 						newpoints.append(pt)
@@ -182,6 +188,9 @@ class Polyline2d(Element2d):
 		return self
 	def isClipped(self):
 		return len(self.points) == 0
+	def perspectivize(self, fov, aspect):
+		for i in range(len(self.points)):
+			self.points[i] = xf.m(xf.scale2d(1.0/(self.w_s[i] * np.tan(fov/2.0)), 1.0/(self.w_s[i] * np.tan(fov/2.0) * aspect)), self.points[i])
 	def isPolyline(self):
 		return True
 
@@ -202,6 +211,8 @@ class Dot2d(Element2d):
 		return self
 	def isClipped(self):
 		return self.clipped
+	def perspectivize(self, fov, aspect):
+		self.point = xf.m(xf.scale2d(1.0/(self.w * np.tan(fov/2.0)), 1.0/(self.w * np.tan(fov/2.0) * aspect)), self.point)
 	def isDot(self):
 		return True
 
@@ -380,7 +391,7 @@ class Scene3d(Scene):
 			                      xf.cross((elem3d.points[1][0] - elem3d.points[0][0], elem3d.points[1][1] - elem3d.points[0][1], elem3d.points[1][2] - elem3d.points[0][2]),
 			                   	           (elem3d.points[2][0] - elem3d.points[0][0], elem3d.points[2][1] - elem3d.points[0][1], elem3d.points[2][2] - elem3d.points[0][2])))
 			elem = Polygon2d([(elem3d.points[0][0], elem3d.points[0][1]), (elem3d.points[1][0], elem3d.points[1][1]), (elem3d.points[2][0], elem3d.points[2][1])],
-				                   w_s=[elem3d.points[0][2], elem3d.points[1][2], elem3d.points[2][2]],
+				                   w_s=[-elem3d.points[0][2], -elem3d.points[1][2], -elem3d.points[2][2]],
 				                   fill=elem3d.fill)
 		elif (elem3d.isLine()):
 			linedir = (elem3d.points[1][0] - elem3d.points[0][0], elem3d.points[1][1] - elem3d.points[0][1], elem3d.points[1][2] - elem3d.points[0][2])
@@ -388,26 +399,35 @@ class Scene3d(Scene):
 			plane = xf.Plane(elem3d.points[0],
 			                      xf.cross(xf.cross(linedir, zaxis), linedir))
 			elem = Polyline2d([(elem3d.points[0][0], elem3d.points[0][1]), (elem3d.points[1][0], elem3d.points[1][1])],
-				                   w_s=[elem3d.points[0][2], elem3d.points[1][2]],
+				                   w_s=[-elem3d.points[0][2], -elem3d.points[1][2]],
 			                       stroke=elem3d.stroke, width=elem3d.width)
 		elif (elem3d.isDot()):
 			plane = xf.Plane(elem3d.point, (0, 0, 1))
-			elem = Dot2d((elem3d.point[0], elem3d.point[1]), w=elem3d.point[2], stroke=elem3d.stroke, width=elem3d.width)
+			elem = Dot2d((elem3d.point[0], elem3d.point[1]), w=-elem3d.point[2], stroke=elem3d.stroke, width=elem3d.width)
 		else:
 			raise TypeError("not 3D element")
 
-		#TODO intersect with near plane
-		
-		# nppt = (0, 0, -self.camera.near)
-		# npnm = (0, 0, 1)
-		# lineClipperDirection = xf.cross(npnm, plane.nm)
-		# if (xf.length3d(lineClipperDirection) < 1e-10):
-		# 	# elem is directy facing camera
-		# 	if (plane.pt[2] > -self.camera.near):
-		# 		# elem is entirely in from of near plane
-		# 		elem.clip(InverseClipper(TrueClipper()))
-		# else:
+		# intersect with near plane
+		nppt = (0, 0, -self.camera.near)
+		npnm = (0, 0, 1)
+		lineClipperDirection = xf.cross(npnm, plane.nm)
+		if (xf.length3d(lineClipperDirection) < 1e-10):
+			# elem is directy facing camera
+			if (plane.pt[2] > -self.camera.near):
+				# elem is entirely in from of near plane
+				elem.clip(InverseClipper(TrueClipper()))
+		else:
+			lineClipperDirection = xf.norm3d(lineClipperDirection)
+			# solve for point on both planes and make lineclipper (can use line-plane intersection)
+			proj = (plane.nm[0], plane.nm[1], 0)
+			lineClipperPoint = self.intersectLinePlane(nppt, proj, plane.pt, plane.nm)
 
+			lineClipper = LineClipper(lineClipperPoint, lineClipperDirection)
+
+			if (plane.nm[2] <= 0):
+				lineClipper = InverseClipper(lineClipper)
+
+			elem.clip(lineClipper)
 
 		if (elem.isClipped()):
 			return None
@@ -479,16 +499,11 @@ class Scene3d(Scene):
 				else:
 					self.insertToTree(tree.right, frontGeoNode)
 
-		# TODO
-		# for in front and behind, if contains geometry
-			# if tree's left/right is None
-				# construct new tree elem with behind/front GeoNode as as data
-			# else
-				# insert left/right into that tree
 	def drawTree(self, scene2d, tree):
 		if (not tree.left is None):
 			self.drawTree(scene2d, tree.left)
 
+		tree.data.elem.perspectivize(fov=self.camera.fov, aspect=self.camera.aspect)
 		scene2d.addElem(tree.data.elem)
 
 		if (not tree.right is None):
