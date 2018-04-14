@@ -4,7 +4,7 @@ import numpy as np
 
 W = 1920.0
 H = 1080.0
-duration = 1
+duration = 4
 
 # scale = 1.0/4
 scale = 1.0

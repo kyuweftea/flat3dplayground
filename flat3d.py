@@ -454,19 +454,18 @@ class Scene3d(Scene):
 			lineClipperDirection = xf.cross(tree.data.plane.nm, geonode.plane.nm)
 			if (xf.length3d(lineClipperDirection) < 1e-10):
 				# planes are parallel
-				if (geonode.plane.nm[2]**2 < 1e-10):
-					# shapes are flat
-					return
+				# do line-plane intersection to determine closer plane
+				# planept is a point on the geonode plane that is directly "above" or "below" the tree.data plane point
+				planept = self.intersectLinePlane(tree.data.plane.pt, tree.data.plane.nm, geonode.plane.pt, geonode.plane.nm)
+				toPlanept = (planept[0] - self.camera.position[0], planept[1] - self.camera.position[1], planept[2] - self.camera.position[2])
+				toGeopt = (tree.data.plane.pt[0] - self.camera.position[0], tree.data.plane.pt[1] - self.camera.position[1], tree.data.plane.pt[2] - self.camera.position[2])
+				if (xf.length3d(toPlanept) < xf.length3d(toGeopt)):
+					frontClipper = TrueClipper()
+					backClipper = InverseClipper(frontClipper)
 				else:
-					# do line-plane intersection to determine closer plane
-					planept = self.intersectLinePlane(tree.data.plane.pt, tree.data.plane.nm, geonode.plane.pt, geonode.plane.nm)
-					if (planept[2] > tree.data.plane.pt[2]):
-						frontClipper = TrueClipper()
-						backClipper = InverseClipper(frontClipper)
-					else:
-						backClipper = TrueClipper()
-						frontClipper = InverseClipper(backClipper)
-					# set either front or back clipper to trueclipper
+					backClipper = TrueClipper()
+					frontClipper = InverseClipper(backClipper)
+				# set either front or back clipper to trueclipper
 			else:
 				lineClipperDirection = xf.norm3d(lineClipperDirection)
 				# solve for point on both planes and make lineclipper (can use line-plane intersection)
@@ -476,7 +475,7 @@ class Scene3d(Scene):
 
 				lineClipper = LineClipper(lineClipperPoint, lineClipperDirection)
 
-				if ((tree.data.plane.nm[2] > 0) == (geonode.plane.nm[2] > 0)):
+				if (geonode.plane.nm[2] > 0) != (xf.dot3d(tree.data.plane.nm, tree.data.plane.pt) > 0):
 					# lineclipper is back
 					backClipper = lineClipper
 					frontClipper = InverseClipper(backClipper)
