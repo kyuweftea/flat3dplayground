@@ -517,7 +517,7 @@ class Scene3d(Scene):
 		           [v_x[1], v_y[1], v_z[1], 0],
 		           [v_x[2], v_y[2], v_z[2], 0],
 		           [     0,      0,      0, 1]]
-		v = xf.M(xf.translate3d(-self.camera.position[0], -self.camera.position[1], -self.camera.position[2]), np.linalg.inv(v_r_inv))
+		v = xf.M(np.linalg.inv(v_r_inv), xf.translate3d(-self.camera.position[0], -self.camera.position[1], -self.camera.position[2]))
 		scene2d = Scene2d(w=self.w2d, h=self.h2d, scale=self.scale2d, transform=xf.M(xf.translate2d(self.w2d/2.0, self.h2d/2.0), xf.scale2d(self.w2d/2.0, -self.h2d/2.0)))
 		
 		# make tree
