@@ -109,14 +109,16 @@ class Polygon2d(Element2d):
 					if (clipper.contains(E)):
 						if (not clipper.contains(S)):
 							pt, w = clipper.intersect(S, E, Sw, Ew)
-							newpoints.append(pt)
-							newWs.append(w)
+							if np.isfinite(pt[0]) and np.isfinite(pt[1]) and np.isfinite(w):
+								newpoints.append(pt)
+								newWs.append(w)
 						newpoints.append(E)
 						newWs.append(Ew)
 					elif (clipper.contains(S)):
 						pt, w = clipper.intersect(S, E, Sw, Ew)
-						newpoints.append(pt)
-						newWs.append(w)
+						if np.isfinite(pt[0]) and np.isfinite(pt[1]) and np.isfinite(w):
+							newpoints.append(pt)
+							newWs.append(w)
 					S = E
 					Sw = Ew
 				self.points = newpoints
@@ -167,14 +169,16 @@ class Polyline2d(Element2d):
 					if (clipper.contains(E)):
 						if (not clipper.contains(S)):
 							pt, w = clipper.intersect(S, E, Sw, Ew)
-							newpoints.append(pt)
-							newWs.append(w)
+							if np.isfinite(pt[0]) and np.isfinite(pt[1]) and np.isfinite(w):
+								newpoints.append(pt)
+								newWs.append(w)
 						newpoints.append(E)
 						newWs.append(Ew)
 					elif (clipper.contains(S)):
 						pt, w = clipper.intersect(S, E, Sw, Ew)
-						newpoints.append(pt)
-						newWs.append(w)
+						if np.isfinite(pt[0]) and np.isfinite(pt[1]) and np.isfinite(w):
+							newpoints.append(pt)
+							newWs.append(w)
 					S = E
 					Sw = Ew
 				self.points = newpoints
@@ -500,6 +504,7 @@ class Scene3d(Scene):
 					self.insertToTree(tree.left, backGeoNode)
 
 			frontGeoNode = GeoNode(elem=copy.deepcopy(geonode.elem).clip(frontClipper), plane=geonode.plane)
+
 			if (not frontGeoNode.elem.isClipped()):
 				if (tree.right is None):
 					tree.right = Tree(data=frontGeoNode)

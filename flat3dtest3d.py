@@ -29,6 +29,7 @@ def makescene(t):
 	
 	scene.addElem(f3d.Triangle3d(points=[(-1,2,1), (0,0,-1), (1,1,0.5)], fill=(1,0,0)))
 	scene.addElem(f3d.Triangle3d(points=[(-1,1,-0.5), (1, 1, 0), (0,1,1)], fill=(1,1,0)))
+	scene.addElem(f3d.Triangle3d(points=[(-0.5, 0.5, -0.25), (1, 1, -0.5), (-0.25, 1, 1)], fill=(0,1,0)))
 	
 	return scene
 
