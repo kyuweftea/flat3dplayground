@@ -440,7 +440,7 @@ class Scene3d(Scene):
 
 		return GeoNode(elem=elem, plane=plane)
 	def intersectLinePlane(self, linepnt, linedir, planept, planenm):
-		if (xf.dot3d(linedir, planenm) < 1e-10):
+		if (xf.dot3d(linedir, planenm)**2 < 1e-10):
 			# parallel
 			return None
 		t = xf.dot3d(planenm, (planept[0] - linepnt[0], planept[1] - linepnt[1], planept[2] - linepnt[2])) / xf.dot3d(planenm, linedir)
