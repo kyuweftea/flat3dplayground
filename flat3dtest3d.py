@@ -11,7 +11,8 @@ scale = 1.0
 # scale = 4.0
 
 def makescene(t):
-	camera = f3d.Camera3d(position=(3*np.sin(t*np.pi/2.0),-3*np.cos(t*np.pi/2.0),0), direction=(-3*np.sin(t*np.pi/2.0),3*np.cos(t*np.pi/2.0),0), up=(0,0,1), fov=xf.rad(90), aspect=W/H, near=1e-6)
+	dist = 5
+	camera = f3d.Camera3d(position=(dist*np.sin(t*np.pi/2.0),-dist*np.cos(t*np.pi/2.0),0), direction=(-np.sin(t*np.pi/2.0),np.cos(t*np.pi/2.0),0), up=(0,0,1), fov=xf.rad(60), aspect=W/H, near=1e-6)
 	scene = f3d.Scene3d(w2d=W, h2d=H, scale2d=scale, camera=camera)
 
 	# scene.addElem(f3d.Line3d(points=[(-0.5,0.25,-0.6), (0.5,2,1)], stroke=(0,1,1), width=5))
