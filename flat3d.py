@@ -73,8 +73,6 @@ class Element2d(object):
 		return False
 	def perspectivize(self, fov, aspect):
 		pass
-	def unperspectivize(self, fov, aspect):
-		pass
 	def isPolygon(self):
 		return False
 	def isPolyline(self):
@@ -135,11 +133,6 @@ class Polygon2d(Element2d):
 	def perspectivize(self, fov, aspect):
 		for i in range(len(self.points)):
 			self.points[i] = xf.m(xf.scale2d(1.0/(self.w_s[i] * np.tan(fov/2.0) * aspect), 1.0/(self.w_s[i] * np.tan(fov/2.0))), self.points[i])
-		return self
-	def unperspectivize(self, fov, aspect):
-		for i in range (len(self.points)):
-			self.points[i] = xf.m(xf.scale2d(self.w_s[i] * np.tan(fov/2.0) * aspect, self.w_s[i] * np.tan(fov/2.0)), self.points[i])
-		return self
 	def isPolygon(self):
 		return True
 
@@ -198,11 +191,6 @@ class Polyline2d(Element2d):
 	def perspectivize(self, fov, aspect):
 		for i in range(len(self.points)):
 			self.points[i] = xf.m(xf.scale2d(1.0/(self.w_s[i] * np.tan(fov/2.0)), 1.0/(self.w_s[i] * np.tan(fov/2.0) * aspect)), self.points[i])
-		return self
-	def unperspectivize(self, fov, aspect):
-		for i in range(len(self.points)):
-			self.points[i] = xf.m(xf.scale2d(self.w_s[i] * np.tan(fov/2.0), self.w_s[i] * np.tan(fov/2.0) * aspect), self.points[i])
-		return self
 	def isPolyline(self):
 		return True
 
@@ -225,10 +213,6 @@ class Dot2d(Element2d):
 		return self.clipped
 	def perspectivize(self, fov, aspect):
 		self.point = xf.m(xf.scale2d(1.0/(self.w * np.tan(fov/2.0)), 1.0/(self.w * np.tan(fov/2.0) * aspect)), self.point)
-		return self
-	def unperspectivize(self, fov, aspect):
-		self.point = xf.m(xf.scale2d(self.w * np.tan(fov/2.0), self.w * np.tan(fov/2.0) * aspect), self.point)
-		return self
 	def isDot(self):
 		return True
 
@@ -459,6 +443,8 @@ class Scene3d(Scene):
 		if (geonode is None):
 			return
 
+		geonode.elem.perspectivize(self.camera.fov, self.camera.aspect)
+
 		# if tree is None, make tree with this geonode
 		if (tree.data is None):
 			tree.data = geonode
@@ -506,14 +492,14 @@ class Scene3d(Scene):
 					frontClipper = lineClipper
 					backClipper = InverseClipper(frontClipper)
 
-			backGeoNode = GeoNode(elem=copy.deepcopy(geonode.elem).perspectivize(self.camera.fov, self.camera.aspect).clip(backClipper).unperspectivize(self.camera.fov, self.camera.aspect), plane=geonode.plane)
+			backGeoNode = GeoNode(elem=copy.deepcopy(geonode.elem).clip(backClipper), plane=geonode.plane)
 			if (not backGeoNode.elem.isClipped()):
 				if (tree.left is None):
 					tree.left = Tree(data=backGeoNode)
 				else:
 					self.insertToTree(tree.left, backGeoNode)
 
-			frontGeoNode = GeoNode(elem=copy.deepcopy(geonode.elem).perspectivize(self.camera.fov, self.camera.aspect).clip(frontClipper).unperspectivize(self.camera.fov, self.camera.aspect), plane=geonode.plane)
+			frontGeoNode = GeoNode(elem=copy.deepcopy(geonode.elem).clip(frontClipper), plane=geonode.plane)
 			if (not frontGeoNode.elem.isClipped()):
 				if (tree.right is None):
 					tree.right = Tree(data=frontGeoNode)
@@ -524,7 +510,6 @@ class Scene3d(Scene):
 		if (not tree.left is None):
 			self.drawTree(scene2d, tree.left)
 
-		tree.data.elem.perspectivize(fov=self.camera.fov, aspect=self.camera.aspect)
 		scene2d.addElem(tree.data.elem)
 
 		if (not tree.right is None):
