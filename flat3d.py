@@ -479,6 +479,13 @@ class Scene3d(Scene):
 				proj = (geonode.plane.nm[0] - templen*tree.data.plane.nm[0], geonode.plane.nm[1] - templen*tree.data.plane.nm[1], geonode.plane.nm[2] - templen*tree.data.plane.nm[2])
 				lineClipperPoint = self.intersectLinePlane(tree.data.plane.pt, proj, geonode.plane.pt, geonode.plane.nm)
 
+				if (lineClipperPoint[2] > -self.camera.near):
+					lineClipperPoint = self.intersectLinePlane(lineClipperPoint, lineClipperDirection, (0, 0, -1-self.camera.near), (0, 0, 1))
+
+				if (lineClipperPoint[2] + lineClipperDirection[2] > -self.camera.near):
+					intersectionPoint = self.intersectLinePlane(lineClipperPoint, lineClipperDirection, (0, 0, -1-self.camera.near), (0, 0, 1))
+					lineClipperPoint = (intersectionPoint[0] - lineClipperDirection[0], intersectionPoint[1] - lineClipperDirection[1], intersectionPoint[2] - lineClipperDirection[2])
+
 				plineClipperPoint = (lineClipperPoint[0] / (-lineClipperPoint[2] * np.tan(self.camera.fov/2.0) * self.camera.aspect), lineClipperPoint[1] / (-lineClipperPoint[2] * np.tan(self.camera.fov/2.0)))
 
 				lineClipperPointPrime = (lineClipperPoint[0] + lineClipperDirection[0], lineClipperPoint[1] + lineClipperDirection[1], lineClipperPoint[2] + lineClipperDirection[2])
@@ -515,7 +522,8 @@ class Scene3d(Scene):
 		if (not tree.left is None):
 			self.drawTree(scene2d, tree.left)
 
-		scene2d.addElem(tree.data.elem)
+		if (not tree.data is None):
+			scene2d.addElem(tree.data.elem)
 
 		if (not tree.right is None):
 			self.drawTree(scene2d, tree.right)
