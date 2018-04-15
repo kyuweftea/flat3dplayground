@@ -432,6 +432,8 @@ class Scene3d(Scene):
 		if (elem.isClipped()):
 			return None
 
+		elem.perspectivize(self.camera.fov, self.camera.aspect)
+
 		return GeoNode(elem=elem, plane=plane)
 	def intersectLinePlane(self, linepnt, linedir, planept, planenm):
 		if (xf.dot3d(linedir, planenm) < 1e-10):
@@ -442,8 +444,6 @@ class Scene3d(Scene):
 	def insertToTree(self, tree, geonode):
 		if (geonode is None):
 			return
-
-		geonode.elem.perspectivize(self.camera.fov, self.camera.aspect)
 
 		# if tree is None, make tree with this geonode
 		if (tree.data is None):
