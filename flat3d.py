@@ -194,7 +194,7 @@ class Polyline2d(Element2d):
 		return len(self.points) == 0
 	def perspectivize(self, fov, aspect):
 		for i in range(len(self.points)):
-			self.points[i] = xf.m(xf.scale2d(1.0/(self.w_s[i] * np.tan(fov/2.0)), 1.0/(self.w_s[i] * np.tan(fov/2.0) * aspect)), self.points[i])
+			self.points[i] = xf.m(xf.scale2d(1.0/(self.w_s[i] * np.tan(fov/2.0) * aspect), 1.0/(self.w_s[i] * np.tan(fov/2.0))), self.points[i])
 	def isPolyline(self):
 		return True
 
@@ -216,7 +216,7 @@ class Dot2d(Element2d):
 	def isClipped(self):
 		return self.clipped
 	def perspectivize(self, fov, aspect):
-		self.point = xf.m(xf.scale2d(1.0/(self.w * np.tan(fov/2.0)), 1.0/(self.w * np.tan(fov/2.0) * aspect)), self.point)
+		self.point = xf.m(xf.scale2d(1.0/(self.w * np.tan(fov/2.0) * aspect), 1.0/(self.w * np.tan(fov/2.0))), self.point)
 	def isDot(self):
 		return True
 
