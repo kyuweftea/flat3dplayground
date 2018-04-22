@@ -92,7 +92,10 @@ class Polygon2d(Element2d):
 			self.w_s = w_s
 		else:
 			raise TypeError("different number of points and w_s")
-		self.fill = fill
+		if (fill is None):
+			self.fill = (1,0,0)
+		else:
+			self.fill = fill
 	def tf(self, tf):
 		self.points = list(map(lambda x: xf.m(tf,x), self.points))
 		return self
@@ -148,8 +151,14 @@ class Polyline2d(Element2d):
 			self.w_s = w_s
 		else:
 			raise TypeError("different number of points and w_s")
-		self.stroke = stroke
-		self.width = width
+		if (stroke is None):
+			self.stroke = (0,1,0)
+		else:
+			self.stroke = stroke
+		if (width is None):
+			self.width = 2
+		else:
+			self.width = width
 		self.closed = closed
 		self.capbutt = capbutt
 	def tf(self, tf):
@@ -203,8 +212,14 @@ class Dot2d(Element2d):
 		super(Dot2d, self).__init__()
 		self.point = point
 		self.w = w
-		self.stroke = stroke
-		self.width = width
+		if (stroke is None):
+			self.stroke = (1,1,0)
+		else:
+			self.stroke = stroke
+		if (width is None):
+			self.width = 2
+		else:
+			self.width = width
 		self.clipped = False
 	def tf(self, tf):
 		self.point = xf.m(tf, self.point)
